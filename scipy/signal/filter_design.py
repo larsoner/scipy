@@ -375,6 +375,97 @@ def zpk2tf(z, p, k):
     return b, a
 
 
+def tf2sos(b, a):
+    """
+    Return second-order sections from transfer function representation
+
+    Parameters
+    ----------
+    b : array_like
+        Numerator polynomial.
+    a : array_like
+        Denominator polynomial.
+        TODO: "as described in tf2zpk"?
+
+    Returns
+    -------
+    sos : ndarray
+        b, a coefficients for a series of second-order sections
+    k : float
+        System gain.
+    """
+    raise NotImplementedError
+
+
+def sos2tf(sos, k=1.0):
+    """
+    Return a single transfer function from a series of second-order sections
+
+    Parameters
+    ----------
+    sos : array_like
+        b, a coefficients for a series of second-order sections
+        TODO: description of format. Nth order filter has shape ((N+1)//2, 6)
+    k : float, optional
+        System gain, defaults to 1.0
+
+    Returns
+    -------
+    b : ndarray
+        Numerator polynomial.
+    a : ndarray
+        Denominator polynomial.
+
+    """
+    raise NotImplementedError
+
+
+def sos2zpk(sos, k=1.0):
+    """
+    Return zeros, poles, and gain of a series of second-order sections
+
+    Parameters
+    ----------
+    sos : array_like
+        b, a coefficients for a series of second-order sections
+    k : float, optional
+        System gain, defaults to 1.0
+
+    Returns
+    -------
+    z : ndarray
+        Zeros of the transfer function.
+    p : ndarray
+        Poles of the transfer function.
+    k : float
+        System gain.
+    """
+    raise NotImplementedError
+
+
+def zpk2sos(z, p, k):
+    """
+    Return second-order sections from zeros, poles, and gain of a system
+
+    Parameters
+    ----------
+    z : array_like
+        Zeros of the transfer function.
+    p : array_like
+        Poles of the transfer function.
+    k : float
+        System gain.
+
+    Returns
+    -------
+    sos : ndarray
+        b, a coefficients for a series of second-order sections
+    k : float
+        System gain.
+    """
+    raise NotImplementedError
+
+
 def normalize(b, a):
     """Normalize polynomial representation of a transfer function.
 

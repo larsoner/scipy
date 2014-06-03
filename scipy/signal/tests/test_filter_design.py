@@ -12,9 +12,8 @@ from scipy.signal import (tf2zpk, zpk2tf, BadCoefficients, freqz, normalize,
                           buttord, cheby1, cheby2, ellip, cheb1ord, cheb2ord,
                           ellipord, butter, bessel, buttap, besselap,
                           cheb1ap, cheb2ap, ellipap, iirfilter, freqs,
-                          lp2lp, lp2hp, lp2bp, lp2bs, bilinear, cplxreal, 
+                          lp2lp, lp2hp, lp2bp, lp2bs, bilinear, cplxreal,
                           cplxpair)
-
 
 
 class TestCplxPair(TestCase):
@@ -82,6 +81,10 @@ class TestCplxPair(TestCase):
         # 1+3j is unmatched
         assert_raises(ValueError, cplxpair, [1+3j, 1-3j, 1+3j])
 
+        # Not conjugates
+        assert_raises(ValueError, cplxpair, [4+5j, 4+5j])
+        assert_raises(ValueError, cplxpair, [1-7j, 1-7j])
+
         # No pairs
         assert_raises(ValueError, cplxpair, [1+3j])
         assert_raises(ValueError, cplxpair, [1-3j])
@@ -106,13 +109,14 @@ class TestCplxReal(TestCase):
 
     def test_pair_averaging(self):
         # TODO: make a test with poor tolerance and conflated values to test
-        # that the pair averaging is working
+        # that the conjugate averaging is working
         pass
 
     def test_unmatched_conjugates(self):
         # 1+2j is unmatched
         # TODO: currently says "First mismatch is: (1+3j)" which is wrong
-        # Could use unittest.TestCase.assertRaisesRegexp to test the error?
+        # Could use unittest.TestCase.assertRaisesRegexp to test the
+        # error message?
         assert_raises(ValueError, cplxreal, [1+3j, 1-3j, 1+2j])
 
         # 1+2j and 1-3j are unmatched
@@ -124,6 +128,9 @@ class TestCplxReal(TestCase):
         # No pairs
         assert_raises(ValueError, cplxreal, [1+3j])
         assert_raises(ValueError, cplxreal, [1-3j])
+
+    def test_real_input(self):
+        assert_array_equal(cplxreal([2, 0, 1, 4]), ([], [0, 1, 2, 4]))
 
 
 class TestTf2zpk(TestCase):

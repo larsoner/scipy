@@ -394,7 +394,7 @@ def tf2sos(b, a):
     k : float
         System gain.
     """
-    raise NotImplementedError
+    return zpk2sos(*tf2zpk(b, a))
 
 
 def sos2tf(sos, k=1.0):
@@ -463,6 +463,9 @@ def zpk2sos(z, p, k):
     k : float
         System gain.
     """
+    # TODO: call cplxreal on z, double up each complex pole, pair up every
+    # other real pole
+    # "two poles and one zero each, in general"
     raise NotImplementedError
 
 

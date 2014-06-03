@@ -1318,6 +1318,16 @@ class TestSOSFilt(TestCase):
     # TODO: make this run all the same tests as lfilter. should behave
     # identically except for better numerical behavior at high orders
 
+    def test_simple(self):
+        b = [1, 1]
+        a = [1, 0]
+        x = np.ones(8)
+
+        # same as y = lfilter(b, a, x)
+        y = sosfilt(b, a, x)
+
+        assert_allclose(y, [1, 2, 2, 2, 2, 2, 2, 2])
+
     def test_initial_conditions(self):
         b, a = butter(4, 0.7, 'low')
         zi = lfilter_zi(b, a)

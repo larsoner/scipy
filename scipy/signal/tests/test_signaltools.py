@@ -11,7 +11,7 @@ import scipy.signal as signal
 from scipy.signal import (
     correlate, convolve, convolve2d, fftconvolve,
     hilbert, hilbert2, lfilter, lfilter_zi, filtfilt, butter, tf2zpk,
-    invres, vectorstrength, signaltools, sosfilt)
+    invres, vectorstrength, signaltools, sosfilt, sosfilt_zi)
 
 from numpy import array, arange
 import numpy as np
@@ -1186,22 +1186,41 @@ class TestSOSFilt(TestCase):
     # identically except for better numerical behavior at high orders
 
     def test_simple(self):
-        b = [1, 1]
-        a = [1, 0]
+        b = [1, 1, 0]
+        a = [1, 0, 0]
+        sos = np.concatenate((b, a))[np.newaxis, :]
+        k = 1.
         x = np.ones(8)
 
         # same as y = lfilter(b, a, x)
-        y = sosfilt(b, a, x)
+        y = sosfilt(sos, k, x)
 
         assert_allclose(y, [1, 2, 2, 2, 2, 2, 2, 2])
 
     def test_initial_conditions(self):
-        b, a = butter(4, 0.7, 'low')
-        zi = lfilter_zi(b, a)
-        x = np.ones(8)
+        b1, a1 = signal.butter(2, 0.25, 'low')
+        b2, a2 = signal.butter(2, 0.75, 'low')
+        b3, a3 = signal.butter(2, 0.75, 'low')
+        b = np.convolve(np.convolve(b1, b2), b3)
+        a = np.convolve(np.convolve(a1, a2), a3)
+        sos = np.array((np.r_[b1, a1], np.r_[b2, a2], np.r_[b3, a3]))
+        k = 1.
 
-        # same as y, zf = lfilter(b, a, x, zi=zi)
-        y, zf = sosfilt(b, a, x, zi=zi)
+        x = np.random.rand(50)
+
+        # Stopping filtering and continuing
+        y_true, zi = lfilter(b, a, x[:20], zi=np.zeros(6))
+        y_true = np.r_[y_true, lfilter(b, a, x[20:], zi=zi)[0]]
+        assert_allclose(y_true, lfilter(b, a, x))
+
+        y_sos, zi = sosfilt(sos, k, x[:20], zi=np.zeros((3, 2)))
+        y_sos = np.r_[y_sos, sosfilt(sos, k, x[20:], zi=zi)[0]]
+        assert_allclose(y_true, y_sos)
+
+        # Use a step function
+        zi = sosfilt_zi(sos, k)
+        x = np.ones(8)
+        y, zf = sosfilt(sos, k, x, zi=zi)
 
         assert_allclose(y, np.ones(8))
         assert_allclose(zf, zi)

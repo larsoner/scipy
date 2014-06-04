@@ -24,10 +24,10 @@ from ._arraytools import axis_slice, axis_reverse, odd_ext, even_ext, const_ext
 
 __all__ = ['correlate', 'fftconvolve', 'convolve', 'convolve2d', 'correlate2d',
            'order_filter', 'medfilt', 'medfilt2d', 'wiener', 'lfilter',
-           'lfiltic', 'deconvolve', 'hilbert', 'hilbert2', 'cmplx_sort',
-           'unique_roots', 'invres', 'invresz', 'residue', 'residuez',
-           'resample', 'detrend', 'lfilter_zi', 'filtfilt', 'decimate',
-           'vectorstrength']
+           'lfiltic', 'sosfilt', 'deconvolve', 'hilbert', 'hilbert2',
+           'cmplx_sort', 'unique_roots', 'invres', 'invresz', 'residue',
+           'residuez', 'resample', 'detrend', 'lfilter_zi', 'sosfilt_zi',
+           'filtfilt', 'decimate', 'vectorstrength']
 
 
 _modedict = {'valid': 0, 'same': 1, 'full': 2}
@@ -1847,6 +1847,37 @@ def lfilter_zi(b, a):
     return zi
 
 
+def sosfilt_zi(sos, k):
+    """
+    Compute an initial state `zi` for the sosfilt function that corresponds
+    to the steady state of the step response.
+
+    A typical use of this function is to set the initial state so that the
+    output of the filter starts at the same value as the first element of
+    the signal to be filtered.
+
+    Parameters
+    ----------
+    sos : array_like
+        XXX
+
+    k : float
+        System gain.
+
+    Returns
+    -------
+    zi : ndarray
+        Initial conditions suitable for use with ``sosfilt``, shape
+        ``(n_sections, 2)``.
+    """
+    zi = np.empty((sos.shape[0], 2))
+    for stage in range(sos.shape[0]):
+        zi[stage] = lfilter_zi(sos[stage, :3], sos[stage, 3:])
+    if sos.shape[0] > 0:
+        zi[0] *= k
+    return zi
+
+
 def filtfilt(b, a, x, axis=-1, padtype='odd', padlen=None):
     """
     A forward-backward filter.
@@ -1989,20 +2020,21 @@ def filtfilt(b, a, x, axis=-1, padtype='odd', padlen=None):
     return y
 
 
-def sosfilt(sos, x, axis=-1, zi=None):
+def sosfilt(sos, k, x, axis=-1, zi=None):
     """
     Filter data along one-dimension using cascaded second-order sections
 
-    TODO: "with an IIR or FIR filter"?  Pointless implementing FIR this way?
-
-    Filter a data sequence, `x`, using a digital filter defined by `sos`.
-    This is implemented by performing `lfilter` for each second-order
-    section.  See `lfilter` for details.
+    Filter a data sequence, `x`, using a digital IIR filter defined by
+    ``sos``. This is implemented by performing `lfilter` for each
+    second-order section.  See `lfilter` for details.
 
     Parameters
     ----------
     sos : array_like
-        TODO: describe format
+        Array of second-order filter coefficients, must have shape
+        ``(n_sections, 6)``.
+    k : float
+        The gain of the system.
     x : array_like
         An N-dimensional input array.
     axis : int
@@ -2010,10 +2042,12 @@ def sosfilt(sos, x, axis=-1, zi=None):
         linear filter. The filter is applied to each subarray along
         this axis.  Default is -1.
     zi : array_like, optional
-        Initial conditions for the filter delays.  It is a vector
-        (or array of vectors for an N-dimensional input) of length
-        ``max(len(a),len(b))-1``.  If `zi` is None or is not given then
-        initial rest is assumed.  See `lfiltic` for more information.
+        Initial conditions for the cascaded filter delays.  It is a (at least
+        2D) vector of shape ``(n_sections, ..., 2)``, with middle dimensions
+        equal to those of the input shape (without the filtered axis).
+        If `zi` is None or is not given then initial rest is assumed. Note
+        that these initial conditions are *not* the same as the initial
+        conditions given by ``lfiltic``.
 
     Returns
     -------
@@ -2025,28 +2059,45 @@ def sosfilt(sos, x, axis=-1, zi=None):
 
     Notes
     -----
-    TODO: The filter function is implemented as .... series of ...
-    a direct II transposed structure ...
+    The filter function is implemented as a series of second-order filters
+    with direct-form II transposed structure. It is designed to minimize
+    numerical precision errors for high-order filters.
+
+    See also
+    --------
+    zpk2sos, sos2zpk
     """
 
     sos = atleast_2d(sos)
+    k = float(k)
     if sos.ndim != 2:
         raise ValueError('sos array must be 2D')
 
-    n, m = sos.shape
+    m = sos.shape[1]
     if m != 6:
-        raise ValueError('sos array must be shape ((N+1)//2, 6)')
+        raise ValueError('sos array must be shape (n_sections, 6)')
 
-    if zi is None:
-        for stage in range(n):
-            B = sos[stage, :3]
-            A = sos[stage, 3:]
-            x = lfilter(B, A, x, axis)
+    if zi is not None:
+        use_zi = True
+        zi = np.array(zi)
+        x_zi_shape = np.delete(np.array(x.shape), axis)
+        proper_shape = (zi.ndim >= 2 and
+                        zi.shape[0] == sos.shape[0] and zi.shape[-1] == 2 and
+                        np.array_equal(zi.shape[1:-1], x_zi_shape))
+        if not proper_shape:
+            raise ValueError('sos initial states must be shape '
+                             '(n_sections, ..., 2)')
     else:
-        # TODO: Implement initial conditions
-        raise NotImplementedError
+        use_zi = False
 
-    return x
+    for stage in range(sos.shape[0]):
+        if use_zi:
+            x, zi[stage] = lfilter(sos[stage, :3], sos[stage, 3:], x, axis,
+                                   zi=zi[stage])
+        else:
+            x = lfilter(sos[stage, :3], sos[stage, 3:], x, axis)
+    out = (x, zi) if use_zi else x
+    return out
 
 
 from scipy.signal.filter_design import cheby1

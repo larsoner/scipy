@@ -54,7 +54,7 @@ class TestCplxPair(TestCase):
         # Tail should be sorted real numbers:
         assert_allclose(c[20000:], np.sort(c[20000:]))
 
-    def test_real_input(self):
+    def test_real_integer_input(self):
         assert_array_equal(cplxpair([2, 0, 1]), [0, 1, 2])
 
     def test_tolerances(self):
@@ -98,14 +98,27 @@ class TestCplxReal(TestCase):
         zc, zr = cplxreal(np.roots(array([1, 0, 0, 1])))
         assert_allclose(np.append(zc, zr), [1/2 + 1j*sin(pi/3), -1])
 
-        a = [1, 2, 3, 4, 5, 0+1j, 0-1j, 0+spacing(1)+1j, 0+spacing(1)-1j,
-             0-spacing(1)+1j, 0-spacing(1)-1j, 1+1j, 1+1j, 1+1j, 1-1j,
-             1-1j, 1-1j, 1+2j, 1-2j, 2+3j, 2-3j, 2+3j, 2-3j]
-        np.random.shuffle(a)
+        eps = spacing(1)
+
+        a = [0+1j, 0-1j, eps + 1j, eps - 1j, -eps + 1j, -eps - 1j,
+             1, 4, 2, 3, 0, 0,
+             2+3j, 2-3j,
+             1-eps + 1j, 1+2j, 1-2j, 1+eps - 1j,  # sorts out of order
+             3+1j, 3+1j, 3+1j, 3-1j, 3-1j, 3-1j,
+             2-3j, 2+3j]
         zc, zr = cplxreal(a)
-        assert_allclose(zc, [0+1j, 0+1j, 0+1j, 1+1j, 1+1j,
-                             1+1j, 1+2j, 2+3j, 2+3j])
-        assert_allclose(zr, [1, 2, 3, 4, 5])
+        assert_allclose(zc, [1j, 1j, 1j, 1+1j, 1+2j, 2+3j, 2+3j, 3+1j, 3+1j,
+                             3+1j])
+        assert_allclose(zr, [0, 0, 1, 2, 3, 4])
+
+        z = array([1-eps + 1j, 1+2j, 1-2j, 1+eps - 1j, 1+eps+3j, 1-2*eps-3j,
+                   0+1j, 0-1j, 2+4j, 2-4j, 2+3j, 2-3j, 3+7j, 3-7j, 4-eps+1j,
+                   4+eps-2j, 4-1j, 4-eps+2j])
+
+        zc, zr = cplxreal(z)
+        assert_allclose(zc, [1j, 1+1j, 1+2j, 1+3j, 2+3j, 2+4j, 3+7j, 4+1j,
+                             4+2j])
+        assert_equal(zr, [])
 
     def test_pair_averaging(self):
         # TODO: make a test with poor tolerance and conflated values to test
@@ -129,8 +142,10 @@ class TestCplxReal(TestCase):
         assert_raises(ValueError, cplxreal, [1+3j])
         assert_raises(ValueError, cplxreal, [1-3j])
 
-    def test_real_input(self):
-        assert_array_equal(cplxreal([2, 0, 1, 4]), ([], [0, 1, 2, 4]))
+    def test_real_integer_input(self):
+        zc, zr = cplxreal([2, 0, 1, 4])
+        assert_array_equal(zc, [])
+        assert_array_equal(zr, [0, 1, 2, 4])
 
 
 class TestTf2zpk(TestCase):

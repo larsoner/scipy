@@ -2096,6 +2096,7 @@ def sosfilt(sos, k, x, axis=-1, zi=None):
                                    zi=zi[stage])
         else:
             x = lfilter(sos[stage, :3], sos[stage, 3:], x, axis)
+    x *= k
     out = (x, zi) if use_zi else x
     return out
 

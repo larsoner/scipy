@@ -1322,11 +1322,10 @@ class TestSOSFilt(TestCase):
         b = [1, 1, 0]
         a = [1, 0, 0]
         sos = np.concatenate((b, a))[np.newaxis, :]
-        k = 1.
         x = np.ones(8)
 
         # same as y = lfilter(b, a, x)
-        y = sosfilt(sos, k, x)
+        y = sosfilt(sos, x)
 
         assert_allclose(y, [1, 2, 2, 2, 2, 2, 2, 2])
 
@@ -1337,7 +1336,6 @@ class TestSOSFilt(TestCase):
         b = np.convolve(np.convolve(b1, b2), b3)
         a = np.convolve(np.convolve(a1, a2), a3)
         sos = np.array((np.r_[b1, a1], np.r_[b2, a2], np.r_[b3, a3]))
-        k = 1.
 
         x = np.random.rand(50)
 
@@ -1346,14 +1344,14 @@ class TestSOSFilt(TestCase):
         y_true = np.r_[y_true, lfilter(b, a, x[20:], zi=zi)[0]]
         assert_allclose(y_true, lfilter(b, a, x))
 
-        y_sos, zi = sosfilt(sos, k, x[:20], zi=np.zeros((3, 2)))
-        y_sos = np.r_[y_sos, sosfilt(sos, k, x[20:], zi=zi)[0]]
+        y_sos, zi = sosfilt(sos, x[:20], zi=np.zeros((3, 2)))
+        y_sos = np.r_[y_sos, sosfilt(sos, x[20:], zi=zi)[0]]
         assert_allclose(y_true, y_sos)
 
         # Use a step function
-        zi = sosfilt_zi(sos, k)
+        zi = sosfilt_zi(sos)
         x = np.ones(8)
-        y, zf = sosfilt(sos, k, x, zi=zi)
+        y, zf = sosfilt(sos, x, zi=zi)
 
         assert_allclose(y, np.ones(8))
         assert_allclose(zf, zi)

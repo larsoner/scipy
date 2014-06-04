@@ -2029,8 +2029,6 @@ def sosfilt(sos, x, axis=-1, zi=None):
     sos : array_like
         Array of second-order filter coefficients, must have shape
         ``(n_sections, 6)``.
-    k : float
-        The gain of the system.
     x : array_like
         An N-dimensional input array.
     axis : int
@@ -2068,7 +2066,7 @@ def sosfilt(sos, x, axis=-1, zi=None):
     if sos.ndim != 2:
         raise ValueError('sos array must be 2D')
 
-    m = sos.shape[1]
+    n, m = sos.shape
     if m != 6:
         raise ValueError('sos array must be shape (n_sections, 6)')
 
@@ -2077,7 +2075,7 @@ def sosfilt(sos, x, axis=-1, zi=None):
         zi = np.array(zi)
         x_zi_shape = np.delete(np.array(x.shape), axis)
         proper_shape = (zi.ndim >= 2 and
-                        zi.shape[0] == sos.shape[0] and zi.shape[-1] == 2 and
+                        zi.shape[0] == n and zi.shape[-1] == 2 and
                         np.array_equal(zi.shape[1:-1], x_zi_shape))
         if not proper_shape:
             raise ValueError('sos initial states must be shape '
@@ -2085,7 +2083,7 @@ def sosfilt(sos, x, axis=-1, zi=None):
     else:
         use_zi = False
 
-    for stage in range(sos.shape[0]):
+    for stage in range(n):
         if use_zi:
             x, zi[stage] = lfilter(sos[stage, :3], sos[stage, 3:], x, axis,
                                    zi=zi[stage])

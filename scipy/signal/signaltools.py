@@ -1847,7 +1847,7 @@ def lfilter_zi(b, a):
     return zi
 
 
-def sosfilt_zi(sos, k):
+def sosfilt_zi(sos):
     """
     Compute an initial state `zi` for the sosfilt function that corresponds
     to the steady state of the step response.
@@ -1859,10 +1859,8 @@ def sosfilt_zi(sos, k):
     Parameters
     ----------
     sos : array_like
-        XXX
-
-    k : float
-        System gain.
+        Array of second-order filter coefficients, must have shape
+        ``(n_sections, 6)``.
 
     Returns
     -------
@@ -1873,8 +1871,6 @@ def sosfilt_zi(sos, k):
     zi = np.empty((sos.shape[0], 2))
     for stage in range(sos.shape[0]):
         zi[stage] = lfilter_zi(sos[stage, :3], sos[stage, 3:])
-    if sos.shape[0] > 0:
-        zi[0] *= k
     return zi
 
 
@@ -2020,7 +2016,7 @@ def filtfilt(b, a, x, axis=-1, padtype='odd', padlen=None):
     return y
 
 
-def sosfilt(sos, k, x, axis=-1, zi=None):
+def sosfilt(sos, x, axis=-1, zi=None):
     """
     Filter data along one-dimension using cascaded second-order sections
 
@@ -2069,7 +2065,6 @@ def sosfilt(sos, k, x, axis=-1, zi=None):
     """
 
     sos = atleast_2d(sos)
-    k = float(k)
     if sos.ndim != 2:
         raise ValueError('sos array must be 2D')
 
@@ -2096,7 +2091,6 @@ def sosfilt(sos, k, x, axis=-1, zi=None):
                                    zi=zi[stage])
         else:
             x = lfilter(sos[stage, :3], sos[stage, 3:], x, axis)
-    x *= k
     out = (x, zi) if use_zi else x
     return out
 

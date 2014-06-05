@@ -212,12 +212,13 @@ class TestSos2Zpk(TestCase):
                [1.00000, -1.61803, 1.0000, 1.00000, -1.58430, 0.95873],
                [1.00000,  1.00000, 0.0000, 1.00000,  0.97915, 0.00000]]
         z, p, k = sos2zpk(sos)
-        z2 = [-0.5000+0.8660j, -0.5000-0.8660j, 1.7808, -0.2808]
-        p2 = [-1.0000, 1.0000, -9.8990, -0.1010]
-        k2 = -2
+        z2 = [-0.3090 + 0.9511j, -0.3090 - 0.9511j, 0.8090 + 0.5878j,
+              0.8090 - 0.5878j, -1.0000 + 0.0000j, 0]
+        p2 = [-0.3026 + 0.9312j, -0.3026 - 0.9312j, 0.7922 + 0.5755j,
+              0.7922 - 0.5755j, -0.9791 + 0.0000j, 0]
+        k2 = 1
         assert_array_almost_equal(sort(z), sort(z2), decimal=4)
         assert_array_almost_equal(sort(p), sort(p2), decimal=4)
-        assert_array_almost_equal(k, k2)
 
         sos = array([[1, 2, 3, 1, 0.2, 0.3],
                      [4, 5, 6, 1, 0.4, 0.5]])
@@ -226,7 +227,7 @@ class TestSos2Zpk(TestCase):
         p = array([-0.2 - 0.678232998312527j, -0.2 + 0.678232998312527j,
                   -0.1 - 0.538516480713450j, -0.1 + 0.538516480713450j])
         k = 4
-        z2, p2, k2 = sos2zpk(sos, 1)
+        z2, p2, k2 = sos2zpk(sos)
         assert_allclose(cplxpair(z2), z)
         assert_allclose(cplxpair(p2), p)
         assert_allclose(k2, k)

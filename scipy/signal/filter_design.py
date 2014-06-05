@@ -19,7 +19,8 @@ __all__ = ['findfreqs', 'freqs', 'freqz', 'tf2zpk', 'zpk2tf', 'normalize',
            'iirfilter', 'butter', 'cheby1', 'cheby2', 'ellip', 'bessel',
            'band_stop_obj', 'buttord', 'cheb1ord', 'cheb2ord', 'ellipord',
            'buttap', 'cheb1ap', 'cheb2ap', 'ellipap', 'besselap',
-           'filter_dict', 'band_dict', 'BadCoefficients']
+           'filter_dict', 'band_dict', 'BadCoefficients', 'cplxreal',
+           'cplxpair', 'tf2sos', 'sos2tf', 'zpk2sos', 'sos2zpk']
 
 
 class BadCoefficients(UserWarning):
@@ -567,17 +568,15 @@ def tf2sos(b, a):
     return zpk2sos(*tf2zpk(b, a))
 
 
-def sos2tf(sos, k=1.0):
+def sos2tf(sos):
     """
     Return a single transfer function from a series of second-order sections
 
     Parameters
     ----------
     sos : array_like
-        b, a coefficients for a series of second-order sections
-        TODO: description of format. Nth order filter has shape ((N+1)//2, 6)
-    k : float, optional
-        System gain, defaults to 1.0
+        Array of second-order filter coefficients, must have shape
+        ``(n_sections, 6)``.
 
     Returns
     -------
@@ -587,21 +586,24 @@ def sos2tf(sos, k=1.0):
         Denominator polynomial.
 
     """
-    # TODO: Separate Bs and As, polymul all the Bs into a single B,
-    # all the As into a single A
-    raise NotImplementedError
+    sos = np.asarray(sos)
+    b = [1.]
+    a = [1.]
+    for stage in range(sos.shape[0]):
+        b = np.polymul(b, sos[stage, :3])
+        a = np.polymul(a, sos[stage, 3:])
+    return b, a
 
 
-def sos2zpk(sos, k=1.0):
+def sos2zpk(sos):
     """
     Return zeros, poles, and gain of a series of second-order sections
 
     Parameters
     ----------
     sos : array_like
-        b, a coefficients for a series of second-order sections
-    k : float, optional
-        System gain, defaults to 1.0
+        Array of second-order filter coefficients, must have shape
+        ``(n_sections, 6)``.
 
     Returns
     -------
@@ -612,8 +614,16 @@ def sos2zpk(sos, k=1.0):
     k : float
         System gain.
     """
-    # TODO: Call tf2zpk for each stage, concatenate the z and p arrays
-    raise NotImplementedError
+    sos = np.asarray(sos)
+    z = np.empty(sos.shape[0]*2, np.complex128)
+    p = np.empty(sos.shape[0]*2, np.complex128)
+    k = 1.
+    for stage in range(sos.shape[0]):
+        zpk = tf2zpk(sos[stage, :3], sos[stage, 3:])
+        z[2*stage:2*(stage+1)] = zpk[0]
+        p[2*stage:2*(stage+1)] = zpk[1]
+        k *= zpk[2]
+    return z, p, k
 
 
 def zpk2sos(z, p, k):

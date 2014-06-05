@@ -295,9 +295,11 @@ def cplxreal(z, tol=None):
     [ 1.  3.  4.]
     """
 
-    z = asarray(z)
+    z = atleast_1d(z)
     if z.size == 0:
         return z, z
+    elif z.ndim != 1:
+        raise ValueError('cplxreal only accepts 1D input')
 
     if tol is None:
         # Get tolerance from dtype of input

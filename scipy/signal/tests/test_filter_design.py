@@ -238,8 +238,8 @@ class TestSos2Tf(TestCase):
         sos = [[1, 1, 1, 1, 0, -1],
                [-2, 3, 1, 1, 10, 1]]
         b, a = sos2tf(sos)
-        assert_array_almost_equal(a, [1, 10, 0, -10, -1])
         assert_array_almost_equal(b, [-2, 1, 2, 4, 1])
+        assert_array_almost_equal(a, [1, 10, 0, -10, -1])
 
 
 class TestTf2Sos(TestCase):

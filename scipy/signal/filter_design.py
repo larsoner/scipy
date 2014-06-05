@@ -587,6 +587,8 @@ def sos2tf(sos, k=1.0):
         Denominator polynomial.
 
     """
+    # TODO: Separate Bs and As, polymul all the Bs into a single B,
+    # all the As into a single A
     raise NotImplementedError
 
 
@@ -610,6 +612,7 @@ def sos2zpk(sos, k=1.0):
     k : float
         System gain.
     """
+    # TODO: Call tf2zpk for each stage, concatenate the z and p arrays
     raise NotImplementedError
 
 

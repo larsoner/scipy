@@ -1356,6 +1356,16 @@ class TestSOSFilt(TestCase):
         assert_allclose(y, np.ones(8))
         assert_allclose(zf, zi)
 
+        # Initial condition shape matching
+        x = x[np.newaxis, np.newaxis, :]  # 3D
+        assert_raises(ValueError, sosfilt, sos, x, zi=zi)
+        assert_raises(ValueError, sosfilt, sos, x,
+                      zi=zi[:, np.newaxis, np.newaxis, [0, 1, 1]])
+        y, zf = sosfilt(sos, x, zi=zi[:, np.newaxis, np.newaxis, :])
+
+        assert_allclose(y[0, 0], np.ones(8))
+        assert_allclose(zf[:, 0, 0, :], zi)
+
 
 if __name__ == "__main__":
     run_module_suite()

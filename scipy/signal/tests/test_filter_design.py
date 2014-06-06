@@ -72,8 +72,6 @@ class TestCplxPair(TestCase):
 
     def test_unmatched_conjugates(self):
         # 1+2j is unmatched
-        # TODO: currently says "First mismatch is: (1+3j)" which is wrong
-        # Could use unittest.TestCase.assertRaisesRegexp to test the error?
         assert_raises(ValueError, cplxpair, [1+3j, 1-3j, 1+2j])
 
         # 1+2j and 1-3j are unmatched
@@ -89,8 +87,6 @@ class TestCplxPair(TestCase):
         # No pairs
         assert_raises(ValueError, cplxpair, [1+3j])
         assert_raises(ValueError, cplxpair, [1-3j])
-
-    # TODO: Test N-D
 
 
 class TestCplxReal(TestCase):
@@ -127,9 +123,6 @@ class TestCplxReal(TestCase):
 
     def test_unmatched_conjugates(self):
         # 1+2j is unmatched
-        # TODO: currently says "First mismatch is: (1+3j)" which is wrong
-        # Could use unittest.TestCase.assertRaisesRegexp to test the
-        # error message?
         assert_raises(ValueError, cplxreal, [1+3j, 1-3j, 1+2j])
 
         # 1+2j and 1-3j are unmatched

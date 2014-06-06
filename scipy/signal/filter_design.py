@@ -412,7 +412,6 @@ def cplxpair(z, tol=None, axis=-1):
     # parts first in each pair
     zc = np.dstack((zc.conj(), zc)).flatten()
     z = np.append(zc, zr)
-
     return z
 
 
@@ -560,10 +559,8 @@ def tf2sos(b, a):
 
     Returns
     -------
-    sos : ndarray
-        b, a coefficients for a series of second-order sections
-    k : float
-        System gain.
+    sos : array_like
+        Array of second-order filter coefficients, shape ``(n_sections, 6)``.
     """
     return zpk2sos(*tf2zpk(b, a))
 
@@ -641,15 +638,105 @@ def zpk2sos(z, p, k):
 
     Returns
     -------
-    sos : ndarray
-        b, a coefficients for a series of second-order sections
-    k : float
-        System gain.
+    sos : array_like
+        Array of second-order filter coefficients, must have shape
+        ``(n_sections, 6)``.
     """
-    # TODO: call cplxreal on z, double up each complex pole, pair up every
-    # other real pole
-    # "two poles and one zero each, in general"
-    raise NotImplementedError
+    if len(z) > len(p):
+        raise ValueError('Cannot have more zeros than poles')
+    if len(z) == len(p) == 0:
+        return np.array([[1., 0, 0, 1, 0, 0]])
+    # for simplicity, we'll add a pole at zero to get even counts
+    if len(p) % 2:
+        p = np.concatenate((p, [0.]))
+    n_sections = len(p) // 2
+    sos = np.zeros((n_sections, 6))
+
+    #
+    # Errors propagate through cascaded biquads, so principles to follow:
+    # 1. Minimize each biquad's peak gain
+    #    - Pair poles w/nearest zeros
+    #      (Begin pairing process w/the pole closest to the unit circle)
+    # 2. Poles near the unit circle have highest peaks, place them last
+    #
+
+    # Ensure we have complex conjugate pairs w/matching pole/zero counts
+    # (cplxreal only gives us one element of each complex pair):
+    z = np.pad(cplxpair(z), (0, len(p) - len(z)), 'constant')
+    p_unsorted = np.concatenate(cplxreal(p))
+
+    # Sort poles by proximity to the unit circle, but keep complex pairs
+    # together, and real pairs together in order to construct filters with
+    # resulting real b, a coefficients (while adding the complex conjs):
+    order = np.argsort(np.abs(1 - np.sqrt(np.abs(p_unsorted *
+                                                 p_unsorted.conj()))))
+    for ii in range(0, 2 * n_sections, 2):
+        if p_unsorted[order[0]].imag != 0:
+            # complex pair
+            p[ii] = p_unsorted[order[0]]
+            p[ii+1] = p[ii].conj()
+            dels = [0]
+        else:
+            # real, use it and the next-worst real
+            idx = np.where(p_unsorted[order].imag == 0)[0][[0, 1]]
+            p[ii:ii+2] = p_unsorted[order[idx]]
+            dels = idx
+        order = np.delete(order, dels)
+    assert len(p) == len(z)
+    assert len(order) == 0
+
+    #
+    # order zeros according to proximity to poles, keeping conjugate pairs:
+    #
+    z_out = np.empty(len(z), np.complex128)
+    p_c = np.where(np.imag(p) != 0)[0][::2]  # only track the first per pair
+    p_r = np.where(np.imag(p) == 0)[0]
+    z_c = np.where(np.imag(z) != 0)[0][::2]
+    z_r = np.where(np.imag(z) == 0)[0]
+    # first, pair complex zeros with complex poles if possible
+    z_r_start = 2*len(z_c)
+    for ii in range(0, 2*len(z_c), 2):
+        # find the complex zeros closest to our strongest (remaining) poles
+        if len(p_c) > 0:
+            # pair some complex zeros with the "worst" pair of complex poles
+            idx = np.argmin(np.abs(z[z_c] - p[p_c[0]]))
+            z_out[ii:ii+2] = z[z_c[idx]:z_c[idx]+2]
+            z_c = np.delete(z_c, idx)
+            p_c = np.delete(p_c, 0)
+        else:
+            # pair to two real poles
+            idx = np.argmin(np.abs(z[z_c] - p[p_r[0]]))
+            z_out[ii:ii+2] = z[z_c[idx]:z_c[idx]+2]
+            z_c = np.delete(z_c, idx)
+            p_r = np.delete(p_r, [0, 1])
+    assert len(z_c) == 0
+    # second, pair the real zeros
+    ii = z_r_start
+    while len(z_r) > 0:
+        if len(p_c) > 0:
+            # put two real zeros with a pair of poles
+            idx = np.argsort(np.abs(z[z_r] - p[p_c[0]]))[:2]
+            z_out[ii:ii+2] = z[z_r[idx]]
+            z_r = np.delete(z_r, idx)
+            p_c = np.delete(p_c, 0)
+            ii += 2
+        else:
+            # put one real zero with one real pole
+            idx = np.argmin(np.abs(z[z_r] - p[p_r[0]]))
+            z_out[ii] = z[z_r[idx]]
+            z_r = np.delete(z_r, idx)
+            p_r = np.delete(p_r, 0)
+            ii += 1
+    z = z_out
+
+    # Construct the system, reversing order so the "worst" are last
+    p = np.reshape(p[::-1], (n_sections, 2))
+    z = np.reshape(z[::-1], (n_sections, 2))
+    gains = np.ones(n_sections)
+    gains[0] = k
+    for stage, gain in enumerate(gains):
+        sos[stage, :3], sos[stage, 3:] = zpk2tf(z[stage], p[stage], gain)
+    return sos
 
 
 def normalize(b, a):

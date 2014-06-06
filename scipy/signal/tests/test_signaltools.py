@@ -1187,6 +1187,7 @@ class TestSOSFilt(TestCase):
     # lfilter is extensively tested.
     dt = np.float64
 
+    # The test_rank* tests are pulled from _TestLinearFilter
     def test_rank1(self):
         x = np.linspace(0, 5, 6).astype(self.dt)
         b = np.array([1, -1]).astype(self.dt)
@@ -1198,6 +1199,7 @@ class TestSOSFilt(TestCase):
 
         # Test simple FIR
         b = np.array([1, 1]).astype(self.dt)
+        # NOTE: This was changed (rel. to TestLinear...) to add a pole @zero:
         a = np.array([1, 0]).astype(self.dt)
         y_r = np.array([0, 1, 3, 5, 7, 9.]).astype(self.dt)
         assert_array_almost_equal(sosfilt(tf2sos(b, a), x), y_r)

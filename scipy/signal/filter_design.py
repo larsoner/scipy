@@ -581,7 +581,8 @@ def sos2tf(sos):
     sos = np.asarray(sos)
     b = [1.]
     a = [1.]
-    for stage in range(sos.shape[0]):
+    n_sections = sos.shape[0]
+    for stage in range(n_sections):
         b = np.polymul(b, sos[stage, :3])
         a = np.polymul(a, sos[stage, 3:])
     return b, a
@@ -607,10 +608,11 @@ def sos2zpk(sos):
         System gain.
     """
     sos = np.asarray(sos)
-    z = np.empty(sos.shape[0]*2, np.complex128)
-    p = np.empty(sos.shape[0]*2, np.complex128)
+    n_sections = sos.shape[0]
+    z = np.empty(n_sections*2, np.complex128)
+    p = np.empty(n_sections*2, np.complex128)
     k = 1.
-    for stage in range(sos.shape[0]):
+    for stage in range(n_sections):
         zpk = tf2zpk(sos[stage, :3], sos[stage, 3:])
         z[2*stage:2*(stage+1)] = zpk[0]
         p[2*stage:2*(stage+1)] = zpk[1]

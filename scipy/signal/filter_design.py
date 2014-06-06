@@ -333,7 +333,7 @@ def cplxreal(z, tol=None):
     run_stops = numpy.where(diffs < 0)[0]
 
     # Sort each run by their imaginary parts
-    for i in xrange(len(run_starts)):
+    for i in range(len(run_starts)):
         start = run_starts[i]
         stop = run_stops[i] + 1
         for chunk in (zp[start:stop], zn[start:stop]):
@@ -657,7 +657,7 @@ def zpk2sos(z, p, k):
 
     # Ensure we have complex conjugate pairs w/matching pole/zero counts
     # (cplxreal only gives us one element of each complex pair):
-    z = np.pad(cplxpair(z), (0, len(p) - len(z)), 'constant')
+    z = np.concatenate((cplxpair(z), zeros(len(p) - len(z))))
     p_unsorted = np.concatenate(cplxreal(p))
 
     # Sort poles by proximity to the unit circle, but keep complex pairs

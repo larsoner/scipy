@@ -350,9 +350,9 @@ def cplxreal(z, tol=None):
     return zc, zr
 
 
-def cplxpair(z, tol=None, axis=-1):
+def cplxpair(z, tol=None):
     """
-    Sort `z` into pairs of complex conjugates.
+    Sort ``z`` into pairs of complex conjugates.
 
     Currently this is for 1D arrays only.
 
@@ -374,37 +374,33 @@ def cplxpair(z, tol=None, axis=-1):
     Parameters
     ----------
     z : array_like
-        Input array to be sorted
+        1-dimensional input array to be sorted.
     tol : float, optional
         Relative tolerance for testing realness and conjugate equality.
         Default is 100 * spacing(1) of z's data type (i.e. 2e-14 for float64)
-    axis : int, optional
-        The axis along which to sort the N-D array.  (Not implemented yet.)
 
     Returns
     -------
     y : ndarray
-        Complex conjugate pairs followed by real numbers
+        Complex conjugate pairs followed by real numbers.
 
     Raises
     ------
     ValueError
-        If there are any complex numbers in `z` for which a conjugate
+        If there are any complex numbers in ``z`` for which a conjugate
         cannot be found.
 
     See Also
     --------
-    cplxreal: Splits the real and complex pair components of the input
+    cplxreal: Splits the real and complex pair components of the input.
     """
 
     z = atleast_1d(z)
     if z.size == 0 or np.isrealobj(z):
         return np.sort(z)
 
-    if axis != -1 or z.ndim > 1:
-        # TODO: Add a for loop, and an ND pre-sort if that makes it faster
-        # z = z[np.lexsort((abs(z.imag), z.real), axis)]
-        raise NotImplementedError
+    if z.ndim != 1:
+        raise ValueError('z must be 1D')
 
     zc, zr = cplxreal(z, tol)
 
@@ -555,7 +551,6 @@ def tf2sos(b, a):
         Numerator polynomial.
     a : array_like
         Denominator polynomial.
-        TODO: "as described in tf2zpk"?
 
     Returns
     -------

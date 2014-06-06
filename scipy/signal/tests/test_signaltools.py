@@ -1207,7 +1207,8 @@ class TestSOSFilt(TestCase):
         b = [1, 1, 0]
         a = [1, 0, 0]
         x = np.ones(8)
-        sos = np.concatenate((b, a))[np.newaxis, :]
+        sos = np.concatenate((b, a))
+        sos.shape = (1, 6)
         y = sosfilt(sos, x)
         assert_allclose(y, [1, 2, 2, 2, 2, 2, 2, 2])
 
@@ -1272,12 +1273,13 @@ class TestSOSFilt(TestCase):
         assert_allclose(zf, zi)
 
         # Initial condition shape matching
-        x = x[np.newaxis, np.newaxis, :]  # 3D
+        x.shape = (1, 1) + x.shape  # 3D
         assert_raises(ValueError, sosfilt, sos, x, zi=zi)
+        zi_nd = zi.copy()
+        zi_nd.shape = (zi.shape[0], 1, 1, zi.shape[-1])
         assert_raises(ValueError, sosfilt, sos, x,
-                      zi=zi[:, np.newaxis, np.newaxis, [0, 1, 1]])
-        y, zf = sosfilt(sos, x, zi=zi[:, np.newaxis, np.newaxis, :])
-
+                      zi=zi_nd[:, :, :, [0, 1, 1]])
+        y, zf = sosfilt(sos, x, zi=zi_nd)
         assert_allclose(y[0, 0], np.ones(8))
         assert_allclose(zf[:, 0, 0, :], zi)
 

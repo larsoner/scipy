@@ -18,7 +18,8 @@ from numpy import (allclose, angle, arange, argsort, array, asarray,
                    iscomplexobj, isscalar, mean, ndarray, newaxis, ones, pi,
                    poly, polyadd, polyder, polydiv, polymul, polysub, polyval,
                    prod, product, r_, ravel, real_if_close, reshape,
-                   roots, sort, sum, take, transpose, unique, where, zeros)
+                   roots, sort, sum, take, transpose, unique, where, zeros,
+                   zeros_like)
 import numpy as np
 from scipy.misc import factorial
 from .windows import get_window
@@ -1908,8 +1909,8 @@ def sosfilt_zi(sos):
         raise ValueError('sos must be shape (n_sections, 6)')
     n_sections = sos.shape[0]
     zi = np.empty((n_sections, 2))
-    for stage in range(n_sections):
-        zi[stage] = lfilter_zi(sos[stage, :3], sos[stage, 3:])
+    for section in range(n_sections):
+        zi[section] = lfilter_zi(sos[section, :3], sos[section, 3:])
     return zi
 
 
@@ -2096,6 +2097,18 @@ def sosfilt(sos, x, axis=-1, zi=None):
     with direct-form II transposed structure. It is designed to minimize
     numerical precision errors for high-order filters.
 
+    Examples
+    --------
+
+    >>> [b, a] = butter(6, [0.10, 0.105], 'band', output='ba')
+    >>> sos = butter(6, [0.10, 0.105], 'band', output='sos')
+    >>> x = zeros(1500)
+    >>> x[0] = 1.
+    >>> y_tf = lfilter(b, a, x)
+    >>> y_sos = sosfilt(sos, x)
+    >>> plot(y_tf, 'r')
+    >>> plot(y_sos, 'k')
+
     See also
     --------
     zpk2sos, sos2zpk
@@ -2119,16 +2132,17 @@ def sosfilt(sos, x, axis=-1, zi=None):
         if not proper_shape:
             raise ValueError('sos initial states must be shape '
                              '(n_sections, ..., 2)')
+        zf = zeros_like(zi)
     else:
         use_zi = False
 
-    for stage in range(n_sections):
+    for section in range(n_sections):
         if use_zi:
-            x, zi[stage] = lfilter(sos[stage, :3], sos[stage, 3:], x, axis,
-                                   zi=zi[stage])
+            x, zf[section] = lfilter(sos[section, :3], sos[section, 3:],
+                                     x, axis, zi=zi[section])
         else:
-            x = lfilter(sos[stage, :3], sos[stage, 3:], x, axis)
-    out = (x, zi) if use_zi else x
+            x = lfilter(sos[section, :3], sos[section, 3:], x, axis)
+    out = (x, zf) if use_zi else x
     return out
 
 

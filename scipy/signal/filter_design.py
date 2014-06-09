@@ -582,9 +582,9 @@ def sos2tf(sos):
     b = [1.]
     a = [1.]
     n_sections = sos.shape[0]
-    for stage in range(n_sections):
-        b = np.polymul(b, sos[stage, :3])
-        a = np.polymul(a, sos[stage, 3:])
+    for section in range(n_sections):
+        b = np.polymul(b, sos[section, :3])
+        a = np.polymul(a, sos[section, 3:])
     return b, a
 
 
@@ -612,10 +612,10 @@ def sos2zpk(sos):
     z = np.empty(n_sections*2, np.complex128)
     p = np.empty(n_sections*2, np.complex128)
     k = 1.
-    for stage in range(n_sections):
-        zpk = tf2zpk(sos[stage, :3], sos[stage, 3:])
-        z[2*stage:2*(stage+1)] = zpk[0]
-        p[2*stage:2*(stage+1)] = zpk[1]
+    for section in range(n_sections):
+        zpk = tf2zpk(sos[section, :3], sos[section, 3:])
+        z[2*section:2*(section+1)] = zpk[0]
+        p[2*section:2*(section+1)] = zpk[1]
         k *= zpk[2]
     return z, p, k
 
@@ -642,7 +642,7 @@ def zpk2sos(z, p, k):
     if len(z) > len(p):
         raise ValueError('Cannot have more zeros than poles')
     if len(z) == len(p) == 0:
-        return array([[1., 0, 0, 1, 0, 0]])
+        return array([[1., 0., 0., 1., 0., 0.]])
     # for simplicity, we'll add a pole at zero to get even counts
     if len(p) % 2:
         p = np.concatenate((p, [0.]))
@@ -731,8 +731,9 @@ def zpk2sos(z, p, k):
     z = np.reshape(z[::-1], (n_sections, 2))
     gains = np.ones(n_sections)
     gains[0] = k
-    for stage, gain in enumerate(gains):
-        sos[stage, :3], sos[stage, 3:] = zpk2tf(z[stage], p[stage], gain)
+    for section in range(n_sections):
+        sos[section, :3], sos[section, 3:] = zpk2tf(z[section], p[section],
+                                                    gains[section])
     return sos
 
 
@@ -975,9 +976,9 @@ def iirdesign(wp, ws, gpass, gstop, analog=False, ftype='ellip', output='ba'):
             - Cauer/elliptic: 'ellip'
             - Bessel/Thomson: 'bessel'
 
-    output : {'ba', 'zpk'}, optional
-        Type of output:  numerator/denominator ('ba') or pole-zero ('zpk').
-        Default is 'ba'.
+    output : {'ba', 'zpk', 'sos'}, optional
+        Type of output:  numerator/denominator ('ba'), pole-zero ('zpk'), or
+        second-order sections ('sos'). Default is 'ba'.
 
     Returns
     -------
@@ -987,6 +988,9 @@ def iirdesign(wp, ws, gpass, gstop, analog=False, ftype='ellip', output='ba'):
     z, p, k : ndarray, ndarray, float
         Zeros, poles, and system gain of the IIR filter transfer
         function.  Only returned if ``output='zpk'``.
+    sos : ndarray
+        Second-order sections representation of the IIR filter.
+        Only returned if ``output=='sos'``.
 
     See Also
     --------
@@ -1058,9 +1062,21 @@ def iirfilter(N, Wn, rp=None, rs=None, btype='band', analog=False,
             - Cauer/elliptic: 'ellip'
             - Bessel/Thomson: 'bessel'
 
-    output : {'ba', 'zpk'}, optional
-        Type of output:  numerator/denominator ('ba') or pole-zero ('zpk').
-        Default is 'ba'.
+    output : {'ba', 'zpk', 'sos'}, optional
+        Type of output:  numerator/denominator ('ba'), pole-zero ('zpk'), or
+        second-order sections ('sos'). Default is 'ba'.
+
+    Returns
+    -------
+    b, a : ndarray, ndarray
+        Numerator (`b`) and denominator (`a`) polynomials of the IIR filter.
+        Only returned if ``output='ba'``.
+    z, p, k : ndarray, ndarray, float
+        Zeros, poles, and system gain of the IIR filter transfer
+        function.  Only returned if ``output='zpk'``.
+    sos : ndarray
+        Second-order sections representation of the IIR filter.
+        Only returned if ``output=='sos'``.
 
     See Also
     --------
@@ -1105,7 +1121,7 @@ def iirfilter(N, Wn, rp=None, rs=None, btype='band', analog=False,
     except KeyError:
         raise ValueError("'%s' is not a valid basic IIR filter." % ftype)
 
-    if output not in ['ba', 'zpk']:
+    if output not in ['ba', 'zpk', 'sos']:
         raise ValueError("'%s' is not a valid output form." % output)
 
     if rp is not None and rp < 0:
@@ -1177,6 +1193,8 @@ def iirfilter(N, Wn, rp=None, rs=None, btype='band', analog=False,
         return z, p, k
     elif output == 'ba':
         return zpk2tf(z, p, k)
+    elif output == 'sos':
+        return zpk2sos(z, p, k)
 
 
 def _relative_degree(z, p):
@@ -1524,9 +1542,9 @@ def butter(N, Wn, btype='low', analog=False, output='ba'):
     analog : bool, optional
         When True, return an analog filter, otherwise a digital filter is
         returned.
-    output : {'ba', 'zpk'}, optional
-        Type of output:  numerator/denominator ('ba') or pole-zero ('zpk').
-        Default is 'ba'.
+    output : {'ba', 'zpk', 'sos'}, optional
+        Type of output:  numerator/denominator ('ba'), pole-zero ('zpk'), or
+        second-order sections ('sos'). Default is 'ba'.
 
     Returns
     -------
@@ -1536,6 +1554,9 @@ def butter(N, Wn, btype='low', analog=False, output='ba'):
     z, p, k : ndarray, ndarray, float
         Zeros, poles, and system gain of the IIR filter transfer
         function.  Only returned if ``output='zpk'``.
+    sos : ndarray
+        Second-order sections representation of the IIR filter.
+        Only returned if ``output=='sos'``.
 
     See also
     --------
@@ -1597,9 +1618,9 @@ def cheby1(N, rp, Wn, btype='low', analog=False, output='ba'):
     analog : bool, optional
         When True, return an analog filter, otherwise a digital filter is
         returned.
-    output : {'ba', 'zpk'}, optional
-        Type of output:  numerator/denominator ('ba') or pole-zero ('zpk').
-        Default is 'ba'.
+    output : {'ba', 'zpk', 'sos'}, optional
+        Type of output:  numerator/denominator ('ba'), pole-zero ('zpk'), or
+        second-order sections ('sos'). Default is 'ba'.
 
     Returns
     -------
@@ -1609,6 +1630,9 @@ def cheby1(N, rp, Wn, btype='low', analog=False, output='ba'):
     z, p, k : ndarray, ndarray, float
         Zeros, poles, and system gain of the IIR filter transfer
         function.  Only returned if ``output='zpk'``.
+    sos : ndarray
+        Second-order sections representation of the IIR filter.
+        Only returned if ``output=='sos'``.
 
     See also
     --------
@@ -1679,9 +1703,9 @@ def cheby2(N, rs, Wn, btype='low', analog=False, output='ba'):
     analog : bool, optional
         When True, return an analog filter, otherwise a digital filter is
         returned.
-    output : {'ba', 'zpk'}, optional
-        Type of output:  numerator/denominator ('ba') or pole-zero ('zpk').
-        Default is 'ba'.
+    output : {'ba', 'zpk', 'sos'}, optional
+        Type of output:  numerator/denominator ('ba'), pole-zero ('zpk'), or
+        second-order sections ('sos'). Default is 'ba'.
 
     Returns
     -------
@@ -1691,6 +1715,9 @@ def cheby2(N, rs, Wn, btype='low', analog=False, output='ba'):
     z, p, k : ndarray, ndarray, float
         Zeros, poles, and system gain of the IIR filter transfer
         function.  Only returned if ``output='zpk'``.
+    sos : ndarray
+        Second-order sections representation of the IIR filter.
+        Only returned if ``output=='sos'``.
 
     See also
     --------
@@ -1759,9 +1786,9 @@ def ellip(N, rp, rs, Wn, btype='low', analog=False, output='ba'):
     analog : bool, optional
         When True, return an analog filter, otherwise a digital filter is
         returned.
-    output : {'ba', 'zpk'}, optional
-        Type of output:  numerator/denominator ('ba') or pole-zero ('zpk').
-        Default is 'ba'.
+    output : {'ba', 'zpk', 'sos'}, optional
+        Type of output:  numerator/denominator ('ba'), pole-zero ('zpk'), or
+        second-order sections ('sos'). Default is 'ba'.
 
     Returns
     -------
@@ -1771,6 +1798,9 @@ def ellip(N, rp, rs, Wn, btype='low', analog=False, output='ba'):
     z, p, k : ndarray, ndarray, float
         Zeros, poles, and system gain of the IIR filter transfer
         function.  Only returned if ``output='zpk'``.
+    sos : ndarray
+        Second-order sections representation of the IIR filter.
+        Only returned if ``output=='sos'``.
 
     See also
     --------
@@ -1842,9 +1872,9 @@ def bessel(N, Wn, btype='low', analog=False, output='ba'):
     analog : bool, optional
         When True, return an analog filter, otherwise a digital filter is
         returned.
-    output : {'ba', 'zpk'}, optional
-        Type of output:  numerator/denominator ('ba') or pole-zero ('zpk').
-        Default is 'ba'.
+    output : {'ba', 'zpk', 'sos'}, optional
+        Type of output:  numerator/denominator ('ba'), pole-zero ('zpk'), or
+        second-order sections ('sos'). Default is 'ba'.
 
     Returns
     -------
@@ -1854,6 +1884,9 @@ def bessel(N, Wn, btype='low', analog=False, output='ba'):
     z, p, k : ndarray, ndarray, float
         Zeros, poles, and system gain of the IIR filter transfer
         function.  Only returned if ``output='zpk'``.
+    sos : ndarray
+        Second-order sections representation of the IIR filter.
+        Only returned if ``output=='sos'``.
 
     Notes
     -----

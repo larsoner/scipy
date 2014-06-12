@@ -642,7 +642,7 @@ def zpk2sos(z, p, k):
     if len(z) > len(p):
         raise ValueError('Cannot have more zeros than poles')
     if len(z) == len(p) == 0:
-        return array([[1., 0., 0., 1., 0., 0.]])
+        return array([[k, 0., 0., 1., 0., 0.]])
     # for simplicity, we'll add a pole at zero to get even counts
     if len(p) % 2:
         p = np.concatenate((p, [0.]))

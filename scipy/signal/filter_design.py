@@ -665,8 +665,7 @@ def zpk2sos(z, p, k):
     # Sort poles by proximity to the unit circle, but keep complex pairs
     # together, and real pairs together in order to construct filters with
     # resulting real b, a coefficients (while adding the complex conjs):
-    order = np.argsort(np.abs(1 - np.sqrt(np.abs(p_unsorted *
-                                                 p_unsorted.conj()))))
+    order = np.argsort(np.abs(1 - np.abs(p_unsorted)))
     for ii in range(0, 2 * n_sections, 2):
         if p_unsorted[order[0]].imag != 0:
             # complex pair

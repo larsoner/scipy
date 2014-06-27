@@ -640,17 +640,14 @@ def zpk2sos(z, p, k):
         ``(n_sections, 6)``.
     """
     # make copies
-    z = np.array(z)
     p = np.array(p)
+    z = np.array(z)
     if len(z) > len(p):
         raise ValueError('Cannot have more zeros than poles')
     if len(z) == len(p) == 0:
         return array([[k, 0., 0., 1., 0., 0.]])
-    # for simplicity, we'll add a pole at zero to get even counts
-    if len(p) % 2:
-        p = np.concatenate((p, [0.]))
-    n_sections = len(p) // 2
-    sos = np.zeros((n_sections, 6))
+    n_sections = (len(p) + 1) // 2
+    sos = zeros((n_sections, 6))
 
     #
     # Errors propagate through cascaded biquads, so principles to follow:
@@ -660,10 +657,10 @@ def zpk2sos(z, p, k):
     # 2. Poles near the unit circle have highest peaks, place them last
     #
 
-    # Ensure we have complex conjugate pairs w/matching pole/zero counts
+    # Ensure we have complex conjugate pairs
     # (cplxreal only gives us one element of each complex pair):
-    z = np.concatenate((cplxpair(z), zeros(len(p) - len(z))))
-    p_unsorted = np.concatenate(cplxreal(p))
+    z = cplxpair(z)
+    p_unsorted = concatenate(cplxreal(p))
 
     # Sort poles by proximity to the unit circle, but keep complex pairs
     # together, and real pairs together in order to construct filters with
@@ -677,17 +674,21 @@ def zpk2sos(z, p, k):
             dels = [0]
         else:
             # real, use it and the next-worst real
-            idx = np.where(p_unsorted[order].imag == 0)[0][[0, 1]]
-            p[ii:ii+2] = p_unsorted[order[idx]]
+            idx = np.where(p_unsorted[order].imag == 0)[0]
+            if len(idx) > 1:
+                idx = idx[[0, 1]]
+                p[ii:ii+2] = p_unsorted[order[idx]]
+            else:
+                idx = idx[[0]]
+                p[ii] = p_unsorted[order[idx[0]]]
             dels = idx
         order = np.delete(order, dels)
-    assert len(p) == len(z)
     assert len(order) == 0
 
     #
     # order zeros according to proximity to poles, keeping conjugate pairs:
     #
-    z_out = np.empty(len(z), np.complex128)
+    z_out = np.zeros(len(p), np.complex128)
     p_c = np.where(np.imag(p) != 0)[0][::2]  # only track the first per pair
     p_r = np.where(np.imag(p) == 0)[0]
     z_c = np.where(np.imag(z) != 0)[0][::2]
@@ -715,8 +716,13 @@ def zpk2sos(z, p, k):
         if len(p_c) > 0:
             # put two real zeros with a pair of poles
             idx = np.argsort(np.abs(z[z_r] - p[p_c[0]]))[:2]
-            z_out[ii:ii+2] = z[z_r[idx]]
-            z_r = np.delete(z_r, idx)
+            if len(idx) > 1:
+                z_out[ii:ii+2] = z[z_r[idx]]
+                z_r = np.delete(z_r, idx)
+            else:
+                z_out[ii] = z[z_r[idx[0]]]
+                z_r = np.delete(z_r, idx)
+                assert len(z_r) == 0
             p_c = np.delete(p_c, 0)
             ii += 2
         else:
@@ -729,6 +735,10 @@ def zpk2sos(z, p, k):
     z = z_out
 
     # Construct the system, reversing order so the "worst" are last
+    if len(p) % 2:
+        # make the last section second-order, too
+        p = np.concatenate((p, [0.]))
+        z = np.concatenate((z, [0.]))
     p = np.reshape(p[::-1], (n_sections, 2))
     z = np.reshape(z[::-1], (n_sections, 2))
     gains = np.ones(n_sections)

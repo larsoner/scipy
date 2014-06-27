@@ -639,6 +639,9 @@ def zpk2sos(z, p, k):
         Array of second-order filter coefficients, must have shape
         ``(n_sections, 6)``.
     """
+    # make copies
+    z = np.array(z)
+    p = np.array(p)
     if len(z) > len(p):
         raise ValueError('Cannot have more zeros than poles')
     if len(z) == len(p) == 0:

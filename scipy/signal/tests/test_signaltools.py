@@ -11,7 +11,7 @@ import scipy.signal as signal
 from scipy.signal import (
     correlate, convolve, convolve2d, fftconvolve,
     hilbert, hilbert2, lfilter, lfilter_zi, filtfilt, butter, tf2zpk,
-    invres, vectorstrength, signaltools, lfiltic,
+    invres, vectorstrength, signaltools, lfiltic, tf2sos,
     cplxreal, cplxpair, sosfilt, sosfilt_zi)
 
 from numpy import array, arange, sin, pi, spacing
@@ -1215,8 +1215,8 @@ class TestCplxPair(TestCase):
     def test_output_order(self):
         assert_allclose(cplxpair([1+1j, 1-1j]), [1-1j, 1+1j])
 
-        a = [1+1j, 1+1j, 1,    1-1j, 1-1j, 2]
-        b = [1-1j, 1+1j, 1-1j, 1+1j, 1,    2]
+        a = [1+1j, 1+1j, 1, 1-1j, 1-1j, 2]
+        b = [1-1j, 1+1j, 1-1j, 1+1j, 1, 2]
         assert_allclose(cplxpair(a), b)
 
         # "Purely real numbers are also sorted"

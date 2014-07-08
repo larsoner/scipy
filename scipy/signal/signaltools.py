@@ -2102,11 +2102,16 @@ def sosfilt(sos, x, axis=-1, zi=None):
         use_zi = False
 
     for section in range(n_sections):
+        b = sos[section, :3]
+        a = sos[section, 3:]
+        if b[2] == a[2] == 0:
+            # First-order section
+            b = b[:2]
+            a = a[:2]
         if use_zi:
-            x, zf[section] = lfilter(sos[section, :3], sos[section, 3:],
-                                     x, axis, zi=zi[section])
+            x, zf[section] = lfilter(b, a, x, axis, zi=zi[section])
         else:
-            x = lfilter(sos[section, :3], sos[section, 3:], x, axis)
+            x = lfilter(b, a, x, axis)
     out = (x, zf) if use_zi else x
     return out
 

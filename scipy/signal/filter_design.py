@@ -376,7 +376,7 @@ def cplxpair(z, tol=None):
         1-dimensional input array to be sorted.
     tol : float, optional
         Relative tolerance for testing realness and conjugate equality.
-        Default is ``100 * spacing(1)`` of z's data type (i.e. 2e-14 for
+        Default is ``100 * spacing(1)`` of `z`'s data type (i.e. 2e-14 for
         float64)
 
     Returns
@@ -398,7 +398,7 @@ def cplxpair(z, tol=None):
     --------
     >>> a = [4, 3, 1, 2-2j, 2+2j, 2-1j, 2+1j, 2-1j, 2+1j, 1+1j, 1-1j]
     >>> z = cplxpair(a)
-    >>> print z
+    >>> print(z)
     [ 1.-1.j  1.+1.j  2.-1.j  2.+1.j  2.-1.j  2.+1.j  2.-2.j  2.+2.j  1.+0.j
       3.+0.j  4.+0.j]
     """

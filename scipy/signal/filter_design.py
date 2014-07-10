@@ -675,21 +675,22 @@ def zpk2sos(z, p, k):
     # together, and real pairs together in order to construct filters with
     # resulting real b, a coefficients (while adding the complex conjs):
     order = np.argsort(np.abs(1 - np.abs(p_unsorted)))
+    p_out = np.zeros(n_sections * 2, np.complex128)
     for ii in range(0, 2 * n_sections, 2):
         if p_unsorted[order[0]].imag != 0:
             # complex pair
-            p[ii] = p_unsorted[order[0]]
-            p[ii+1] = p[ii].conj()
+            p_out[ii] = p_unsorted[order[0]]
+            p_out[ii+1] = p_out[ii].conj()
             dels = [0]
         else:
             # real, use it and the next-worst real
             idx = np.where(p_unsorted[order].imag == 0)[0]
             if len(idx) > 1:
                 idx = idx[[0, 1]]
-                p[ii:ii+2] = p_unsorted[order[idx]]
+                p_out[ii:ii+2] = p_unsorted[order[idx]]
             else:
                 idx = idx[[0]]
-                p[ii] = p_unsorted[order[idx[0]]]
+                p_out[ii] = p_unsorted[order[idx[0]]]
             dels = idx
         order = np.delete(order, dels)
     assert len(order) == 0
@@ -697,9 +698,9 @@ def zpk2sos(z, p, k):
     #
     # order zeros according to proximity to poles, keeping conjugate pairs:
     #
-    z_out = np.zeros(len(p), np.complex128)
-    p_c = np.where(np.imag(p) != 0)[0][::2]  # only track the first per pair
-    p_r = np.where(np.imag(p) == 0)[0]
+    z_out = np.zeros_like(p_out)
+    p_c = np.where(np.imag(p_out) != 0)[0][::2]  # only track first per pair
+    p_r = np.where(np.imag(p_out) == 0)[0]
     z_c = np.where(np.imag(z) != 0)[0][::2]
     z_r = np.where(np.imag(z) == 0)[0]
     # first, pair complex zeros with complex poles if possible
@@ -708,13 +709,13 @@ def zpk2sos(z, p, k):
         # find the complex zeros closest to our strongest (remaining) poles
         if len(p_c) > 0:
             # pair some complex zeros with the "worst" pair of complex poles
-            idx = np.argmin(np.abs(z[z_c] - p[p_c[0]]))
+            idx = np.argmin(np.abs(z[z_c] - p_out[p_c[0]]))
             z_out[ii:ii+2] = z[z_c[idx]:z_c[idx]+2]
             z_c = np.delete(z_c, idx)
             p_c = np.delete(p_c, 0)
         else:
             # pair to two real poles
-            idx = np.argmin(np.abs(z[z_c] - p[p_r[0]]))
+            idx = np.argmin(np.abs(z[z_c] - p_out[p_r[0]]))
             z_out[ii:ii+2] = z[z_c[idx]:z_c[idx]+2]
             z_c = np.delete(z_c, idx)
             p_r = np.delete(p_r, [0, 1])
@@ -724,7 +725,7 @@ def zpk2sos(z, p, k):
     while len(z_r) > 0:
         if len(p_c) > 0:
             # put two real zeros with a pair of poles
-            idx = np.argsort(np.abs(z[z_r] - p[p_c[0]]))[:2]
+            idx = np.argsort(np.abs(z[z_r] - p_out[p_c[0]]))[:2]
             if len(idx) > 1:
                 z_out[ii:ii+2] = z[z_r[idx]]
                 z_r = np.delete(z_r, idx)
@@ -736,20 +737,15 @@ def zpk2sos(z, p, k):
             ii += 2
         else:
             # put one real zero with one real pole
-            idx = np.argmin(np.abs(z[z_r] - p[p_r[0]]))
+            idx = np.argmin(np.abs(z[z_r] - p_out[p_r[0]]))
             z_out[ii] = z[z_r[idx]]
             z_r = np.delete(z_r, idx)
             p_r = np.delete(p_r, 0)
             ii += 1
-    z = z_out
 
     # Construct the system, reversing order so the "worst" are last
-    if len(p) % 2:
-        # make the last section second-order, too
-        p = np.concatenate((p, [0.]))
-        z = np.concatenate((z, [0.]))
-    p = np.reshape(p[::-1], (n_sections, 2))
-    z = np.reshape(z[::-1], (n_sections, 2))
+    p = np.reshape(p_out[::-1], (n_sections, 2))
+    z = np.reshape(z_out[::-1], (n_sections, 2))
     gains = np.ones(n_sections)
     gains[0] = k
     for section in range(n_sections):

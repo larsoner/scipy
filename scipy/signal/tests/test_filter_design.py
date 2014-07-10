@@ -293,6 +293,22 @@ class TestZpk2Sos(TestCase):
                 [1, 1.25, 1.5, 1, 0.4, 0.5]]
         assert_allclose(sos, sos2)
 
+        z = []
+        p = [0.2, -0.5+0.25j, -0.5-0.25j]
+        k = 1.
+        sos = zpk2sos(z, p, k)
+        sos2 = [[1., 0., 0., 1., -0.2, 0.],
+                [1., 0., 0., 1., 1., 0.3125]]
+        assert_allclose(sos, sos2)
+
+        z = []
+        p = [0.8, -0.5+0.25j, -0.5-0.25j]
+        k = 1.
+        sos = zpk2sos(z, p, k)
+        sos2 = [[1., 0., 0., 1., 1., 0.3125],
+                [1., 0., 0., 1., -0.8, 0.]]
+        assert_allclose(sos, sos2)
+
 
 class TestFreqz(TestCase):
 

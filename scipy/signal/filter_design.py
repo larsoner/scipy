@@ -19,8 +19,8 @@ __all__ = ['findfreqs', 'freqs', 'freqz', 'tf2zpk', 'zpk2tf', 'normalize',
            'iirfilter', 'butter', 'cheby1', 'cheby2', 'ellip', 'bessel',
            'band_stop_obj', 'buttord', 'cheb1ord', 'cheb2ord', 'ellipord',
            'buttap', 'cheb1ap', 'cheb2ap', 'ellipap', 'besselap',
-           'filter_dict', 'band_dict', 'BadCoefficients', 'cplxreal',
-           'cplxpair', 'tf2sos', 'sos2tf', 'zpk2sos', 'sos2zpk']
+           'filter_dict', 'band_dict', 'BadCoefficients',
+           'tf2sos', 'sos2tf', 'zpk2sos', 'sos2zpk']
 
 
 class BadCoefficients(UserWarning):
@@ -247,7 +247,7 @@ def freqz(b, a=1, worN=None, whole=0, plot=None):
     return w, h
 
 
-def cplxreal(z, tol=None):
+def _cplxreal(z, tol=None):
     """
     Split into complex and real parts, combining conjugate pairs.
 
@@ -285,12 +285,12 @@ def cplxreal(z, tol=None):
 
     See Also
     --------
-    cplxpair
+    _cplxpair
 
     Examples
     --------
     >>> a = [4, 3, 1, 2-2j, 2+2j, 2-1j, 2+1j, 2-1j, 2+1j, 1+1j, 1-1j]
-    >>> zc, zr = cplxreal(a)
+    >>> zc, zr = _cplxreal(a)
     >>> print zc
     [ 1.+1.j  2.+1.j  2.+1.j  2.+2.j]
     >>> print zr
@@ -301,7 +301,7 @@ def cplxreal(z, tol=None):
     if z.size == 0:
         return z, z
     elif z.ndim != 1:
-        raise ValueError('cplxreal only accepts 1D input')
+        raise ValueError('_cplxreal only accepts 1D input')
 
     if tol is None:
         # Get tolerance from dtype of input
@@ -351,7 +351,7 @@ def cplxreal(z, tol=None):
     return zc, zr
 
 
-def cplxpair(z, tol=None):
+def _cplxpair(z, tol=None):
     """
     Sort into pairs of complex conjugates.
 
@@ -392,12 +392,12 @@ def cplxpair(z, tol=None):
 
     See Also
     --------
-    cplxreal: Splits the real and complex pair components of the input.
+    _cplxreal
 
     Examples
     --------
     >>> a = [4, 3, 1, 2-2j, 2+2j, 2-1j, 2+1j, 2-1j, 2+1j, 1+1j, 1-1j]
-    >>> z = cplxpair(a)
+    >>> z = _cplxpair(a)
     >>> print(z)
     [ 1.-1.j  1.+1.j  2.-1.j  2.+1.j  2.-1.j  2.+1.j  2.-2.j  2.+2.j  1.+0.j
       3.+0.j  4.+0.j]
@@ -410,7 +410,7 @@ def cplxpair(z, tol=None):
     if z.ndim != 1:
         raise ValueError('z must be 1-dimensional')
 
-    zc, zr = cplxreal(z, tol)
+    zc, zr = _cplxreal(z, tol)
 
     # Interleave complex values and their conjugates, with negative imaginary
     # parts first in each pair
@@ -564,7 +564,22 @@ def tf2sos(b, a):
     -------
     sos : ndarray
         Array of second-order filter coefficients, with shape
-        ``(n_sections, 6)``.
+        ``(n_sections, 6)``. See `sosfilt` for the SOS filter format
+        specification.
+
+    Notes
+    -----
+    It is generally discouraged to convert from TF to SOS format, since doing
+    so usually will not improve numerical precision errors. Instead, consider
+    designing filters in ZPK format and coverting directly to SOS. TF is
+    converted to SOS by first converting to ZPK format, then converting
+    ZPK to SOS.
+
+    .. versionadded:: 0.15.0
+
+    See also
+    --------
+    zpk2sos, sosfilt
     """
     return zpk2sos(*tf2zpk(b, a))
 
@@ -577,7 +592,8 @@ def sos2tf(sos):
     ----------
     sos : array_like
         Array of second-order filter coefficients, must have shape
-        ``(n_sections, 6)``.
+        ``(n_sections, 6)``. See `sosfilt` for the SOS filter format
+        specification.
 
     Returns
     -------
@@ -586,6 +602,9 @@ def sos2tf(sos):
     a : ndarray
         Denominator polynomial coefficients.
 
+    Notes
+    -----
+    .. versionadded:: 0.15.0
     """
     sos = np.asarray(sos)
     b = [1.]
@@ -605,7 +624,8 @@ def sos2zpk(sos):
     ----------
     sos : array_like
         Array of second-order filter coefficients, must have shape
-        ``(n_sections, 6)``.
+        ``(n_sections, 6)``. See `sosfilt` for the SOS filter format
+        specification.
 
     Returns
     -------
@@ -615,6 +635,10 @@ def sos2zpk(sos):
         Poles of the transfer function.
     k : float
         System gain.
+
+    Notes
+    -----
+    .. versionadded:: 0.15.0
     """
     sos = np.asarray(sos)
     n_sections = sos.shape[0]
@@ -646,7 +670,22 @@ def zpk2sos(z, p, k):
     -------
     sos : ndarray
         Array of second-order filter coefficients, with shape
-        ``(n_sections, 6)``.
+        ``(n_sections, 6)``. See `sosfilt` for the SOS filter format
+        specification.
+
+    Notes
+    -----
+    The algorithm used to convert ZPK to SOS format is designed to
+    minimize errors due to numerical precision issues. The pairing
+    algorithm attempts to minimize the peak gain of each biquadratic
+    section. This is done by pairing poles with the nearest zeros, starting
+    with the poles closest to the unit circle.
+
+    .. versionadded:: 0.15.0
+
+    See also
+    --------
+    sosfilt
     """
     # make copies
     p = np.array(p)
@@ -667,9 +706,9 @@ def zpk2sos(z, p, k):
     #
 
     # Ensure we have complex conjugate pairs
-    # (cplxreal only gives us one element of each complex pair):
-    z = cplxpair(z)
-    p_unsorted = concatenate(cplxreal(p))
+    # (_cplxreal only gives us one element of each complex pair):
+    z = _cplxpair(z)
+    p_unsorted = concatenate(_cplxreal(p))
 
     # Sort poles by proximity to the unit circle, but keep complex pairs
     # together, and real pairs together in order to construct filters with
@@ -1009,6 +1048,10 @@ def iirdesign(wp, ws, gpass, gstop, analog=False, ftype='ellip', output='ba'):
         Second-order sections representation of the IIR filter.
         Only returned if ``output=='sos'``.
 
+    Notes
+    -----
+    The ``'sos'`` output parameter was added in 0.15.0.
+
     See Also
     --------
     butter : Filter design using order and critical points
@@ -1016,7 +1059,6 @@ def iirdesign(wp, ws, gpass, gstop, analog=False, ftype='ellip', output='ba'):
     buttord : Find order and critical points from passband and stopband spec
     cheb1ord, cheb2ord, ellipord
     iirfilter : General filter design using order and critical frequencies
-
     """
     try:
         ordfunc = filter_dict[ftype][1]
@@ -1094,6 +1136,10 @@ def iirfilter(N, Wn, rp=None, rs=None, btype='band', analog=False,
     sos : ndarray
         Second-order sections representation of the IIR filter.
         Only returned if ``output=='sos'``.
+
+    Notes
+    -----
+    The ``'sos'`` output parameter was added in 0.15.0.
 
     See Also
     --------
@@ -1574,6 +1620,10 @@ def butter(N, Wn, btype='low', analog=False, output='ba'):
         Second-order sections representation of the IIR filter.
         Only returned if ``output=='sos'``.
 
+    Notes
+    -----
+    The ``'sos'`` output parameter was added in 0.15.0.
+
     See also
     --------
     buttord
@@ -1648,6 +1698,10 @@ def cheby1(N, rp, Wn, btype='low', analog=False, output='ba'):
     sos : ndarray
         Second-order sections representation of the IIR filter.
         Only returned if ``output=='sos'``.
+
+    Notes
+    -----
+    The ``'sos'`` output parameter was added in 0.15.0.
 
     See also
     --------
@@ -1733,6 +1787,10 @@ def cheby2(N, rs, Wn, btype='low', analog=False, output='ba'):
         Second-order sections representation of the IIR filter.
         Only returned if ``output=='sos'``.
 
+    Notes
+    -----
+    The ``'sos'`` output parameter was added in 0.15.0.
+
     See also
     --------
     cheb2ord
@@ -1814,6 +1872,10 @@ def ellip(N, rp, rs, Wn, btype='low', analog=False, output='ba'):
     sos : ndarray
         Second-order sections representation of the IIR filter.
         Only returned if ``output=='sos'``.
+
+    Notes
+    -----
+    The ``'sos'`` output parameter was added in 0.15.0.
 
     See also
     --------
@@ -1899,6 +1961,10 @@ def bessel(N, Wn, btype='low', analog=False, output='ba'):
     sos : ndarray
         Second-order sections representation of the IIR filter.
         Only returned if ``output=='sos'``.
+
+    Notes
+    -----
+    The ``'sos'`` output parameter was added in 0.15.0.
 
     Notes
     -----

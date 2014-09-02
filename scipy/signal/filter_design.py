@@ -577,7 +577,7 @@ def tf2sos(b, a):
 
     .. versionadded:: 0.15.0
 
-    See also
+    See Also
     --------
     zpk2sos, sosfilt
     """
@@ -683,10 +683,19 @@ def zpk2sos(z, p, k):
 
     .. versionadded:: 0.15.0
 
-    See also
+    See Also
     --------
     sosfilt
     """
+    # TODO in the near future:
+    # 1. Allow more zeros than poles (probably no reason not to).
+    # 2. Add SOS capability to `filtfilt`, `freqz`, etc. somehow (#3259).
+    # 3. Make `decimate` use `sosfilt` instead of `lfilter`.
+    # 4. Make sosfilt automatically simplify sections to first order
+    #    when possible. Note this might make `sosfiltfilt` a bit harder (ICs).
+    # 5. Further optimizations of the section ordering / pole-zero pairing.
+    # See the wiki for other potential issues.
+
     # make copies
     p = np.array(p)
     z = np.array(z)
@@ -738,10 +747,10 @@ def zpk2sos(z, p, k):
     # order zeros according to proximity to poles, keeping conjugate pairs:
     #
     z_out = np.zeros_like(p_out)
-    p_c = np.where(np.imag(p_out) != 0)[0][::2]  # only track first per pair
-    p_r = np.where(np.imag(p_out) == 0)[0]
-    z_c = np.where(np.imag(z) != 0)[0][::2]
-    z_r = np.where(np.imag(z) == 0)[0]
+    p_c = np.where(np.iscomplex(p_out))[0][::2]  # only track first per pair
+    p_r = np.where(np.isreal(p_out))[0]
+    z_c = np.where(np.iscomplex(z))[0][::2]
+    z_r = np.where(np.isreal(z))[0]
     # first, pair complex zeros with complex poles if possible
     z_r_start = 2*len(z_c)
     for ii in range(0, 2*len(z_c), 2):
@@ -1089,7 +1098,8 @@ def iirfilter(N, Wn, rp=None, rs=None, btype='band', analog=False,
     IIR digital and analog filter design given order and critical points.
 
     Design an Nth order digital or analog filter and return the filter
-    coefficients in (B,A) (numerator, denominator) or (Z,P,K) form.
+    coefficients in (B,A) (numerator, denominator), (Z,P,K), or (SOS)
+    (second-order sections) form.
 
     Parameters
     ----------
@@ -1624,7 +1634,7 @@ def butter(N, Wn, btype='low', analog=False, output='ba'):
     -----
     The ``'sos'`` output parameter was added in 0.15.0.
 
-    See also
+    See Also
     --------
     buttord
 
@@ -1703,7 +1713,7 @@ def cheby1(N, rp, Wn, btype='low', analog=False, output='ba'):
     -----
     The ``'sos'`` output parameter was added in 0.15.0.
 
-    See also
+    See Also
     --------
     cheb1ord
 
@@ -1791,7 +1801,7 @@ def cheby2(N, rs, Wn, btype='low', analog=False, output='ba'):
     -----
     The ``'sos'`` output parameter was added in 0.15.0.
 
-    See also
+    See Also
     --------
     cheb2ord
 
@@ -1877,7 +1887,7 @@ def ellip(N, rp, rs, Wn, btype='low', analog=False, output='ba'):
     -----
     The ``'sos'`` output parameter was added in 0.15.0.
 
-    See also
+    See Also
     --------
     ellipord
 

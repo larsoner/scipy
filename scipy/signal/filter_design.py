@@ -716,7 +716,7 @@ def zpk2sos(z, p, k):
 
     # Ensure we have complex conjugate pairs
     # (_cplxreal only gives us one element of each complex pair):
-    z = _cplxpair(z)
+    z = _cplxpair(z).conj()  # get the upper-half one from each pair
     p_unsorted = concatenate(_cplxreal(p))
 
     # Sort poles by proximity to the unit circle, but keep complex pairs

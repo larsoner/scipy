@@ -571,7 +571,7 @@ def tf2sos(b, a):
     -----
     It is generally discouraged to convert from TF to SOS format, since doing
     so usually will not improve numerical precision errors. Instead, consider
-    designing filters in ZPK format and coverting directly to SOS. TF is
+    designing filters in ZPK format and converting directly to SOS. TF is
     converted to SOS by first converting to ZPK format, then converting
     ZPK to SOS.
 

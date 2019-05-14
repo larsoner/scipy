@@ -11,10 +11,27 @@ from scipy._lib._testutils import FPUModeChangeWarning
 
 
 def pytest_configure(config):
+    config.addinivalue_line("addopts",
+        "-l")
+
     config.addinivalue_line("markers",
         "slow: Tests that are very slow.")
     config.addinivalue_line("markers",
         "xslow: mark test as extremely slow (not run unless explicitly requested)")
+
+    config.addinivalue_line("filterwarnings",
+        "error")
+    config.addinivalue_line("filterwarnings",
+        "always::scipy._lib._testutils.FPUModeChangeWarning")
+    config.addinivalue_line("filterwarnings",
+        "once:.*LAPACK bug 0038.*:RuntimeWarning")
+    config.addinivalue_line("filterwarnings",
+        "ignore:Using or importing the ABCs from 'collections'*:DeprecationWarning")
+    config.addinivalue_line("filterwarnings",
+        "ignore:can't resolve package from __spec__ or __package__, falling back on __name__ and __path__:ImportWarning")
+
+    config.addinivalue_line("env",
+        "PYTHONHASHSEED=0")
 
 
 def pytest_runtest_setup(item):

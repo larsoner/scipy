@@ -1,7 +1,6 @@
 
 import sys as _sys
 from keyword import iskeyword as _iskeyword
-from collections import _tuplegetter
 
 
 def _validate_names(typename, field_names, extra_field_names):
@@ -136,13 +135,16 @@ def __new__(_cls, {arg_list}, **extra_fields):
     }
     for index, name in enumerate(field_names):
         doc = _sys.intern(f'Alias for field number {index}')
-        class_namespace[name] = _tuplegetter(index, doc)
+
+        def _get(self, index=index):
+            return self[index]
+        class_namespace[name] = property(_get, doc=doc)
     for name in extra_field_names:
         doc = _sys.intern(f'Alias for name {name}')
 
         def _get(self, name=name):
             return self._extra_fields[name]
-        class_namespace[name] = property(_get)
+        class_namespace[name] = property(_get, doc=doc)
 
     result = type(typename, (tuple,), class_namespace)
 

@@ -58,7 +58,7 @@ class TestMakeTupleBunch:
             self.result.x = -1
 
     def test_read_only_new(self):
-        with pytest.raises(AttributeError, match="can't set attribute"):
+        with pytest.raises(AttributeError, match="no attribute"):
             self.result.plate_of_shrimp = "lattice of coincidence"
 
     def test_constructor_missing_parameter(self):
@@ -100,6 +100,12 @@ class TestMakeTupleBunch:
         sq = Square(width=1, height=2)
         assert_equal(sq.width, 1)
         assert_equal(sq.height, 2)
+
+    def test_tuple_like(self):
+        Tup = make_tuple_bunch('Tup', ['a', 'b'])
+        tu = Tup(a=1, b=2)
+        assert isinstance(tu, tuple)
+        assert isinstance(tu + (1,), tuple)
 
     def test_explicit_module(self):
         m = 'some.module.name'

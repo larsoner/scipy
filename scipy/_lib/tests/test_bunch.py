@@ -37,7 +37,7 @@ class TestMakeTupleBunch:
         assert_equal((x0, y0, z0), (1, 2, 3))
 
     def test_slice(self):
-        assert_equal(self.result[1:], [2, 3])
+        assert_equal(self.result[1:], (2, 3))
 
     def test_repr(self):
         s = repr(self.result)

@@ -160,5 +160,6 @@ def __new__(_cls, {arg_list}, **extra_fields):
             pass
     if module is not None:
         result.__module__ = module
+        __new__.__module__ = module
 
     return result

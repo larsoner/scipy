@@ -84,24 +84,33 @@ def make_tuple_bunch(typename, field_names, extra_field_names=None,
 
     s = f"""\
 def __new__(_cls, {arg_list}, **extra_fields):
-    out = _tuple_new(_cls, ({arg_list},))
-    for key in out._extra_fields:
+    return _tuple_new(_cls, ({arg_list},))
+
+def __init__(self, {arg_list}, **extra_fields):
+    for key in self._extra_field_names:
         if key not in extra_fields:
             raise TypeError("missing keyword argument '%s'" % (key,))
     for key, val in extra_fields.items():
-        if key not in out._extra_fields:
+        if key not in self._extra_field_names:
             raise TypeError("unexpected keyword argument '%s'" % (key,))
-        out._extra_fields[key] = val
-    return out
+        self.__dict__[key] = val
+
+def __setattr__(self, key, val):
+    raise AttributeError("can't set attribute %r of class %r"
+                         % (key, self.__class__.__name__))
 """
     del arg_list
     namespace = {'_tuple_new': tuple_new,
-                 '__builtins__': dict(setattr=setattr, set=set,
-                                      TypeError=TypeError),
+                 '__builtins__': dict(setattr=setattr, set=set, dict=dict,
+                                      TypeError=TypeError,
+                                      AttributeError=AttributeError),
                  '__name__': f'namedtuple_{typename}'}
     exec(s, namespace)
     __new__ = namespace['__new__']
     __new__.__doc__ = f'Create new instance of {typename}({full_list})'
+    __init__ = namespace['__init__']
+    __init__.__doc__ = f'Instantiate instance of {typename}({full_list})'
+    __setattr__ = namespace['__setattr__']
 
     def __repr__(self):
         'Return a nicely formatted representation string'
@@ -110,12 +119,12 @@ def __new__(_cls, {arg_list}, **extra_fields):
     def _asdict(self):
         'Return a new dict which maps field names to their values.'
         out = _dict(_zip(self._fields, self))
-        out.update(self._extra_fields)
+        out.update(self.__dict__)
         return out
 
     def __getnewargs_ex__(self):
         'Return self as a plain tuple.  Used by copy and pickle.'
-        return _tuple(self), self._extra_fields
+        return _tuple(self), self.__dict__
 
     # Modify function metadata to help with introspection and debugging
     for method in (__new__, __repr__, _asdict, __getnewargs_ex__):
@@ -125,12 +134,13 @@ def __new__(_cls, {arg_list}, **extra_fields):
     # and use type() to build the result class
     class_namespace = {
         '__doc__': f'{typename}({full_list})',
-        '__slots__': (),
         '_fields': field_names,
         '__new__': __new__,
+        '__init__': __init__,
         '__repr__': __repr__,
+        '__setattr__': __setattr__,
         '_asdict': _asdict,
-        '_extra_fields': {k: None for k in extra_field_names},
+        '_extra_fields': extra_field_names,
         '__getnewargs_ex__': __getnewargs_ex__,
     }
     for index, name in enumerate(field_names):
@@ -143,7 +153,7 @@ def __new__(_cls, {arg_list}, **extra_fields):
         doc = _sys.intern(f'Alias for name {name}')
 
         def _get(self, name=name):
-            return self._extra_fields[name]
+            return self.__dict__[name]
         class_namespace[name] = property(_get, doc=doc)
 
     result = type(typename, (tuple,), class_namespace)

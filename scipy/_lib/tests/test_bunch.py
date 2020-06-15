@@ -76,6 +76,21 @@ class TestMakeTupleBunch:
         assert_equal(Result.__module__, m)
         assert_equal(self.result.__module__, m)
 
+    def test_extra_fields_per_instance(self):
+        # This test exists to ensure that instances of the same class
+        # store their own values for the extra fields. That is, the values
+        # are stord per instance and not in the class.
+        result1 = Result(x=1, y=2, z=3, w=-1, beta=0.0)
+        result2 = Result(x=4, y=5, z=6, w=99, beta=1.0)
+        assert_equal(result1.w, -1)
+        assert_equal(result1.beta, 0.0)
+        # The rest of these checks aren't essential, but let's check
+        # them anyway.
+        assert_equal(result1[:], (1, 2, 3))
+        assert_equal(result2.w, 99)
+        assert_equal(result2.beta, 1.0)
+        assert_equal(result2[:], (4, 5, 6))
+
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # Other tests
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

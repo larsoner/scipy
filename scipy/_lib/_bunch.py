@@ -140,7 +140,7 @@ def __setattr__(self, key, val):
         '__repr__': __repr__,
         '__setattr__': __setattr__,
         '_asdict': _asdict,
-        '_extra_fields': extra_field_names,
+        '_extra_field_names': extra_field_names,
         '__getnewargs_ex__': __getnewargs_ex__,
     }
     for index, name in enumerate(field_names):

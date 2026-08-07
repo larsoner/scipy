@@ -451,6 +451,9 @@ description = "Launch IPython (array-api-cpu env)"
 [feature.bench-common.dependencies]
 # https://github.com/airspeed-velocity/asv/issues/1537
 asv = "==0.6.4"
+# peak_finding calls scipy.datasets.electrocardiogram() in setup(), so a missing
+# pooch is an asv failure rather than a skip
+pooch = "*"
 
 [feature.bench.tasks.bench]
 cmd = "spin bench --no-build"
